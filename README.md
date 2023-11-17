@@ -15,5 +15,5 @@ This tools converts a standard Mac raw disk image to a MacWorks disk image for a
 - Mac disk images have 512 byte blocks. MacWorks disk image have 532 byte blocks.
 - Mac disk image blocks are in consecutive order. MacWorks disk image blocks are inteleaved 5:1.
 - MacWorks disk images have a several boot blocks that occupy the first 201,728 bytes (394 blocks).
-- All header/tag bytes/page labels (the 20 bytes of additional data a ProFile stores) are converted to all zeros except the last digit which is the XOR checksum of the block.
+- All header/tag bytes/page labels (the 20 bytes of additional data a ProFile stores) are converted to all zeros except the last digit which is the XOR checksum of the block. In a MacWorks disk image for a Lisa, these bytes are stored at the beginning of each block, followed by the 512 byte block of data. For a Mac disk image, they are removed completely.
 
