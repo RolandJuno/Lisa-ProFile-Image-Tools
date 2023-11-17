@@ -17,4 +17,3 @@ This tools converts a standard Mac raw disk image to a MacWorks disk image for a
 - MacWorks disk images have a several boot blocks that occupy the first 201,728 bytes (394 blocks).
 - All header/tag bytes/page labels (the 20 bytes of additional data a ProFile stores) are converted to all zeros except the last digit which is the XOR checksum of the block.
 
-- 
