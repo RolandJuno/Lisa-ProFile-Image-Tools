@@ -39,7 +39,7 @@ def printProgress (iteration, total, prefix = '', suffix = '', decimals = 1, bar
         sys.stdout.write('\n')
     sys.stdout.flush()
 
-infile = outfile = mwboot = origfile = ''
+infile = outfile = mwboot = ''
 
 if len(sys.argv) > 1:
     for i in range(1, len(sys.argv)):
@@ -58,17 +58,12 @@ if len(sys.argv) > 1:
             if a[1]:
                 mwboot = a[1]
                 print "MacWorks Bootblock:", mwboot
-        if sys.argv[i].startswith("origfile"):
-            a = sys.argv[i].split("=")
-            if a[1]:
-                origfile = a[1]
-                print "Original Lisa Image:", origfile
 
-if not infile and not outfile and not origfile:
+if not infile and not outfile:
     print "Converts a non-interleaved and tag-less MacWorks disk image back to an ArduinoFile/ProFile disk image."
     print "Adds 5:1 interleaving and header/tag bytes/pagelabels. Results in 532 byte blocks. For use Lisa hardware."
-    print "Requires previously created macworks-bootblocks.bin file made with lisa2mac.py and the original Lisa disk image from the lisa2mac conversion."
-    print "example: mac2lisa.py infile=\"System6.0.8-Mac.image\" origfile=\"System6.0.8-Old.image\" outfile=\"System6.0.8.img\" mwboot=\"macworks-bootblocks.bin\""
+    print "Requires previously created macworks-bootblocks.bin file made with lisa2mac.py."
+    print "example: mac2lisa.py infile=\"System6.0.8-Mac.image\" outfile=\"System6.0.8.img\" mwboot=\"macworks-bootblocks.bin\""
     print
     exit()
 
@@ -77,9 +72,6 @@ if not infile:
     exit()
 if not outfile:
     print "ERROR: outfile not specified."
-    exit()
-if not origfile:
-    print "ERROR: origfile not specified."
     exit()
 if not mwboot:
     mwboot="macworks-bootblocks.bin"
@@ -97,15 +89,10 @@ if totalsize%512:
 # Open new ArduinoFile/Lisa image
 of = open(outfile, 'wb')
 
-# Open original MacWorks Lisa image to grab the headers/tag bytes/page labels
-tagsf = open(origfile, 'rb')
-tagsf.seek(0)
-
 # Read MacWorks bootblock
 with open(mwboot, 'rb') as bb:
     macworksbootblock = bb.read(201728)
 bb.close
-
 totalread = 0
 totalwrite = 0
 
@@ -129,8 +116,8 @@ for n in range(numBlocks):
     blockno = n + offset[n % 16]
     #print "Block", n, "maps to block", blockno, (blockno*512,(blockno*512)+512)
     printProgress(iteration=n, total=numBlocks, prefix="Converting to Lisa Format", suffix="Complete", barLength=50)
-    tagsf.seek(n*532)
-    tags = tagsf.read(19) # Get old tag minus chksum
+    if n==0: tags = "\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\x00\x00\x00\x00\x00\x00\x00"
+    else: tags = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
     data = tags + chr(0) + source[blockno*512:(blockno*512)+512] # New tag is set to 0 before checksum
     chksum = checksum(data)
     data = data[:19] + chr(chksum) + data[20:] # Add new checksum back to tag and block
@@ -143,7 +130,7 @@ for n in range(numBlocks):
             exit()
 of.close
 print
-if numBlocks * 532 != totalwrite: print "ERROR: Output file is not expected size", totalwrite, "is not expected size of", numBLocks*532
+if numBlocks * 532 != totalwrite: print "ERROR: Output file is not expected size", totalwrite, "is not expected size of", numBlocks*532
 else: print "Wrote", totalwrite, "bytes."
 print "Done."
 exit()
