@@ -47,17 +47,17 @@ if len(sys.argv) > 1:
             a = sys.argv[i].split("=")
             if a[1]:
                 infile = a[1]
-                print "Infile:", infile
+                print "Infile  :", infile
         if sys.argv[i].startswith("outfile"):
             a = sys.argv[i].split("=")
             if a[1]:
                 outfile = a[1]
-                print "Outfile:", outfile
+                print "Outfile :", outfile
         if sys.argv[i].startswith("mwboot"):
             a = sys.argv[i].split("=")
             if a[1]:
                 mwboot = a[1]
-                print "MacWorks Bootblock:", mwboot
+                print "MacWorks:", mwboot
 
 if not infile and not outfile:
     print "Converts a non-interleaved and tag-less MacWorks disk image back to an ArduinoFile/ProFile disk image."
@@ -75,13 +75,15 @@ if not outfile:
     exit()
 if not mwboot:
     mwboot="macworks-bootblocks.bin"
-    print "MacWorks boot blocks:", mwboot
+    print "MacWorks:", mwboot
 
 # Open Mac image to convert
 f = open(infile,'rb')
 f.seek(0)
-totalsize = os.stat(infile).st_size
-print "Total blocks to process:", totalsize/512
+totalsize = os.stat(infile).st_size + 201728 # Image + MacWorks boot blocks
+numblocks = totalsize/512
+
+print "Blocks  :", '{:,}'.format(totalsize/512)
 if totalsize%512:
     print "ERROR: infile is not evenly divisible by 512 (the number of bytes in a Mac disk image."
     exit()
@@ -109,13 +111,12 @@ f.close
 # Boot block 0x0000 - 0x31400
 # Source blocks are 512 bytes. Destination blocks are 532 bytes.
 
+print
 output = ''
-totalsize += 201728 # Account for additional size from adding MacWorks boot block
-numBlocks = totalsize/512
-for n in range(numBlocks):
+for n in range(numblocks):
     blockno = n + offset[n % 16]
     #print "Block", n, "maps to block", blockno, (blockno*512,(blockno*512)+512)
-    printProgress(iteration=n, total=numBlocks, prefix="Converting to Lisa Format", suffix="Complete", barLength=50)
+    printProgress(iteration=n, total=numblocks, prefix="Converting to Lisa Format", suffix="Complete", barLength=50)
     if n==0: tags = "\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\x00\x00\x00\x00\x00\x00\x00"
     else: tags = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
     data = tags + chr(0) + source[blockno*512:(blockno*512)+512] # New tag is set to 0 before checksum
@@ -123,14 +124,12 @@ for n in range(numBlocks):
     data = data[:19] + chr(chksum) + data[20:] # Add new checksum back to tag and block
     of.write(data) # Add new 532 byte block to our output.
     totalwrite += len(data)
-    if n == 0: # Check the boot block
-        if ord(data[4:5]) != 170 or ord(data[5:6]) != 170:
-            print "ERROR: Bytes 4 and 5 of block 0 header are not set to AA:AA, this image will not boot on a Lisa."
-            print "Check the source MacWorks boot block or create a new one by running lisa2mac.py again."
-            exit()
+
 of.close
-print
-if numBlocks * 532 != totalwrite: print "ERROR: Output file is not expected size", totalwrite, "is not expected size of", numBlocks*532
-else: print "Wrote", totalwrite, "bytes."
+print '\n'
+expectedsize=numblocks*532
+print "Expected:", '{:,}'.format(expectedsize), 'bytes.'
+print "Actual  :", '{:,}'.format(totalwrite),  'bytes.'
+if expectedsize != totalwrite: print "ERROR: Output file size", totalwrite, "is not expected size", expectedsize, "(difference of", totalwrite-expectedsize, ")"
 print "Done."
 exit()

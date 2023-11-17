@@ -38,7 +38,7 @@ if len(sys.argv) > 1:
             a = sys.argv[i].split("=")
             if a[1]:
                 infile = a[1]
-                print "Infile:", infile
+                print "Infile :", infile
         if sys.argv[i].startswith("outfile"):
             a = sys.argv[i].split("=")
             if a[1]:
@@ -71,7 +71,7 @@ if totalsize%532:
     exit()
 totalread = 0
 totalwrite = 0
-print "Total blocks to process:", totalsize/532
+print "Blocks  :", '{:,}'.format(totalsize/532)
 print
 
 # Define interleaving pattern ProFile -> Mac
